@@ -22,13 +22,17 @@ std::vector<AtHitCluster> *GetHitClusterArray() {
 
 
 
-void Bepp_ana(Int_t nEvents = 10000)
+void Bepp_ana(Int_t nEvents = 1000)
 {
 
 
    TH2F *angle_vs_energy = new TH2F("angle_vs_energy", "angle_vs_energy", 720, 0, 179, 1000, 0, 100.0);
-   TH2F *angle_vs_momentum = new TH2F("angle_vs_momentum", "angle_vs_momentum", 720, 0, 179, 1000, 0, 2.0);
+   TH2F *energy_vs_clusterangle = new TH2F("energy_vs_clusterangle", "energy_vs_clusterangle", 720, 0, 179, 1000, 0, 2.0);
    TH2F *energy_vs_Zorb = new TH2F("energy_vs_Zorb", "energy_vs_Zorb", 720, 0, 179, 1000, 0, 100.0);
+   TCanvas *c1 = new TCanvas();
+   c1->Divide(2, 2);
+   c1->Draw();
+
 
 
    FairRunAna *run = new FairRunAna();
@@ -36,151 +40,128 @@ void Bepp_ana(Int_t nEvents = 10000)
 
    for (auto iFile = 0; iFile < files.size(); ++iFile) {
 
-      TString mcFileNameHead = files[iFile];
-      TString mcFileNameTail = ".root";
-      TString mcFileName = mcFileNameHead + mcFileNameTail;
+       TString mcFileNameHead = files[iFile];
+       TString mcFileNameTail = ".root";
+       TString mcFileName = mcFileNameHead + mcFileNameTail;
   // std:
     //  cout << " Analysis of simulation file  " << mcFileName << endl;
 
-      TFile *file = new TFile(mcFileName.Data(), "READ");
-      TTree *tree = (TTree *)file->Get("cbmsim");
+       TFile *file = new TFile(mcFileName.Data(), "READ");
+       TTree *tree = (TTree *)file->Get("cbmsim");
 
-      tree = (TTree *)file->Get("cbmsim");
-      // TBranch *branch = tree->GetBranch("AtTpcPoint");
-      TTreeReader Reader1("cbmsim", file);
-      TTreeReaderValue<TClonesArray> eventArray(Reader1, "AtPatternEvent");
+       tree = (TTree *)file->Get("cbmsim");
+       // TBranch *branch = tree->GetBranch("AtTpcPoint");
+       TTreeReader Reader1("cbmsim", file);
+       TTreeReaderValue<TClonesArray> eventArray(Reader1, "AtPatternEvent");
      // TTreeReaderValue<TClonesArray> SimPointArray(Reader1, "AtMCPoint");
-      bool simulationConv = 0;
-      Double_t deltaPhi = 0.0;
-      Double_t POCAOrbZ = 1E6;
-      Double_t firstOrbZ = 0.0;
-      Double_t phiOrbZ = 0.0;
-      Double_t lengthOrbZ = 0.0;
-      Double_t length = 0;
-      Double_t PhiPRA=0.0;
-      Double_t xiniPRA=0.0;
-      Double_t yiniPRA=0.0;
-      Double_t ziniPRA=0.0;
-      Double_t phiClus =0;
-      Double_t zIniCal = 0;
 
- 
-      ROOT::Math::XYZPoint iniPos;
-      ROOT::Math::XYZPoint secPos;
+       Double_t deltaPhi = 0.0;
+       Double_t POCAOrbZ = 1E6;
+       Double_t firstOrbZ = 0.0;
+       Double_t phiOrbZ = 0.0;
+       Double_t lengthOrbZ = 0.0;
+       Double_t length = 0;
+       Double_t PhiPRA=0.0;
+       Double_t xiniPRA=0.0;
+       Double_t yiniPRA=0.0;
+       Double_t ziniPRA=0.0;
+       Double_t phiClus =0;
+       Double_t zIniCal = 0;
 
 
-      for (Int_t i = 0; i < nEvents; i++) {
+       ROOT::Math::XYZPoint iniPos;
+       ROOT::Math::XYZPoint secPos;
 
-          std::cout << " Event Number : " << i << "\n";
+       for (Int_t i = 0; i < nEvents; i++) {
 
-          Reader1.Next();
-      
-          AtPatternEvent *patternEvent = (AtPatternEvent *)eventArray->At(0);
+           //std::cout << " Event Number : " << i << "\n";
 
-          if (patternEvent) {
-             std::vector<AtTrack> &patternTrackCand = patternEvent->GetTrackCand();
-             //std::cout << " Number of pattern tracks " << patternTrackCand.size() << "\n";
-             for (auto track : patternTrackCand) {
+           Reader1.Next();
 
-	         std::cout << " === Track " << track.GetTrackID() << " with "
-                         << track.GetHitClusterArray()->size() << " clusters "  << "\n";
+           AtPatternEvent *patternEvent = (AtPatternEvent *)eventArray->At(0);
 
+           if (patternEvent) {
+              std::vector<AtTrack> &patternTrackCand = patternEvent->GetTrackCand();
+              //std::cout << " Number of pattern tracks " << patternTrackCand.size() << "\n";
+              for (auto track : patternTrackCand) {
 
-		 if ( track.GetHitClusterArray()->size() < 5) {
-                    std::cout << " Track is noise or has less than 5 clusters! "  << "\n";
-                    continue;
-                 }
-
-                 AtTrack *ini;
-		 AtTrack *sec;
-                 auto hitClusterArray = track.GetHitClusterArray();
-                 AtHitCluster iniCluster;
-                 AtHitCluster SecCluster;
-
-		 Double_t theta = track.GetGeoTheta();
-	         Double_t rad   = track.GetGeoRadius();
-                 //Double_t phi = track.SetGeoPhi(-phiClus);
-		 //std::vector<AtHitCluster> *hitClusterArray = track.GetHitClusterArray();
-                 Double_t B_f = 3.0;
-                 double bro = B_f * rad / TMath::Sin(theta) / 1000.0;
-                 double ener = 0;
-                 Double_t Am = 1.0;
-
-                 GetEnergy(Am, 1.0, bro, ener);
-
-                 angle_vs_energy->Fill(180.0 - theta * TMath::RadToDeg(), ener * Am);
+	         // std::cout << " === Track " << track.GetTrackID() << " with "
+                        // << track.GetHitClusterArray()->size() << " clusters "  << "\n";
 
 
-		 Double_t thetaConv;
-                 if (simulationConv) {
-                     thetaConv = 180.0 - theta * TMath::RadToDeg();
-                 } else {
-                     thetaConv = theta * TMath::RadToDeg();
-                 }
+		  if ( track.GetHitClusterArray()->size() < 5) {
+                     //std::cout << " Track is noise or has less than 5 clusters! "  << "\n";
+                     continue;
+                  }
+		  auto hitClusterArray = track.GetHitClusterArray();
+                  AtHitCluster iniCluster;
+                  AtHitCluster SecCluster;
 
-                 if (thetaConv < 90.0) {
-                    iniCluster = hitClusterArray->back(); // NB: Use back because We do not reverse the cluster vector like in AtGenfit!
-                    iniPos = iniCluster.GetPosition();
-                    zIniCal = 1000.0 - iniPos.Z();
-                 } else if (thetaConv > 90.0) {
-                   iniCluster = hitClusterArray->front();
-                   iniPos = iniCluster.GetPosition();
-                   zIniCal = iniPos.Z();
-                 }
-		 xiniPRA = iniPos.X();
-                 yiniPRA = iniPos.Y();
-                 ziniPRA = zIniCal;
- 		 phiClus = TMath::ATan2(secPos.Y() - iniPos.Y(), -secPos.X() + iniPos.X());
-                 PhiPRA = phiClus * TMath::RadToDeg();
-	         //std::cout << " Initial position : " << xiniPRA << " - " << yiniPRA << " - " << ziniPRA <<"-" <<PhiPRA<< "\n";
+                  Double_t theta = track.GetGeoTheta();
+                  Double_t rad   = track.GetGeoRadius();
+                  //Double_t phi = track.SetGeoPhi(-phiClus);
+                  //std::vector<AtHitCluster> *hitClusterArray = track.GetHitClusterArray();
+                  Double_t B_f = 3.0;
+                  double bro = B_f * rad / TMath::Sin(theta) / 1000.0;
+                  double ener = 0;
+                  Double_t Am = 1.0;
 
-                 if (hitClusterArray->size() > 0)
-                        for (auto iclus = 1; iclus < hitClusterArray->size(); ++iclus) {
-                            SecCluster =hitClusterArray->at(iclus-1);
-                            iniCluster = hitClusterArray->at(iclus);
+                  GetEnergy(Am, 1.0, bro, ener);
 
-			    auto cluster_inipos = iniCluster.GetPosition();
-                            auto cluster_secpos = SecCluster.GetPosition();
+                  angle_vs_energy->Fill(180.0 - theta * TMath::RadToDeg(), ener * Am);
 
+                  if (i == 589){
+		     std::cout<< "Processing event " << i  << "with " << track.GetHitClusterArray()->size() << " clusters" << endl;
 
-                            auto dir = cluster_secpos - cluster_inipos;
-                            length += dir.mag2();
+                     for (auto iclus = 1; iclus < hitClusterArray->size(); ++iclus) {
+                      //std::cout<<hitClusterArray->size()<<endl;
+                         SecCluster = hitClusterArray->at(iclus-1);
+                         iniCluster = hitClusterArray->at(iclus);
 
-                            Double_t phiInc = TMath::ATan2(cluster_secpos.Y()-cluster_inipos.Y(),-cluster_secpos.X()+cluster_inipos.X());//calculate angle between the two clusters.
-                            Double_t distance = TMath::Sqrt(cluster_secpos.X() * cluster_secpos.X() + cluster_secpos.Y() * cluster_secpos.Y());
-                            phiInc = (phiInc > 0) ? phiInc : 2.0 * TMath::Pi() + phiInc;
-                            deltaPhi += phiInc;
+		         auto cluster_inipos = iniCluster.GetPosition();
+                         auto cluster_secpos = SecCluster.GetPosition();
 
-                            // std::cout<<phiInc*TMath::RadToDeg()<<"    "<<deltaPhi*TMath::RadToDeg()<<"\n";
-                            //std::cout<<" Distance to z axis : "<<distance<<"\n";
-                            //std::cout<<" Length : "<<length<<"\n";
-                            // std::cout<<" Z projection : "<<prevSegPos.Z()<<"\n";
-                            // std::cout<<" momLoss "<<momLoss<<"\n";
+                         auto dir = cluster_secpos - cluster_inipos;
+                         length += dir.mag2();
 
-                            // NB: Find poca after at least half turn.
-	                    if (distance < POCAOrbZ && deltaPhi > TMath::Pi()){
-			       POCAOrbZ = distance;
-		               firstOrbZ=iniPos.Z();
-			       phiOrbZ = deltaPhi;
-                               lengthOrbZ = length;
+		      //auto Ini_Phi_angle = TMath::ATan2(secPos.Y() - iniPos.Y(), -secPos.X() + iniPos.X());
 
-			       //std::cout<<firstOrbZ<<endl;
-			     }
-			    GetEnergy(Am, 1.0, bro, ener);
+                         Double_t phiInc = TMath::ATan2(cluster_secpos.Y()-cluster_inipos.Y(),cluster_inipos.X()-cluster_secpos.X());//calculate angle between the two clusters. 
+                         Double_t distance = TMath::Sqrt(cluster_secpos.X() * cluster_secpos.X() + cluster_secpos.Y() * cluster_secpos.Y());
+                         phiInc = (phiInc > 0) ? phiInc : 2.0 * TMath::Pi() + phiInc;
+                         deltaPhi += phiInc;
 
-			    energy_vs_Zorb->Fill(ener*Am, firstOrbZ);
-                           // if (distance < POCAOrbZ && deltaPhi > TMath::Pi()) {
-                               // POCAOrbZ = distance;
-                                //firstOrbZ = iniPos.Z();
-                                //phiOrbZ = deltaPhi;
-                                //lengthOrbZ = length;
-			    //}
-		        }
-	         }
-             }
+                      //std::cout<<phiInc*TMath::RadToDeg()<<"    "<<deltaPhi*TMath::RadToDeg()<<"\n";
+                      //std::cout<<" Distance to z axis : "<<distance << " " << POCAOrbZ << endl;;
+                      //std::cout<<" Length : "<<length<<"\n";
+                      //std::cout<<" Z projection : "<<cluster_secpos.Z()<<"\n";
+                      // std::cout<<" momLoss "<<momLoss<<"\n";
 
-          }
-      }
+                      // NB: Find poca after at least half turn.
+	                 if (distance < POCAOrbZ && deltaPhi > TMath::Pi()){
+			    POCAOrbZ = distance;
+		            firstOrbZ=cluster_secpos.Z();
+			    phiOrbZ = deltaPhi;
+                            lengthOrbZ = length;
+
+			    std::cout<<TMath::Pi() << " " << phiInc << " " << deltaPhi<< " " << firstOrbZ <<endl;
+
+                         }
+                        double bro = B_f * rad / TMath::Sin(theta) / 1000.0;
+                        double ener = 0;
+                        Double_t Am = 1.0;
+
+                        GetEnergy(Am, 1.0, bro,ener);
+                       // energy_vs_clusterangle->Fill(phiInc,ener*Am);
+		        energy_vs_Zorb->Fill(firstOrbZ,ener*Am);
+
+		     }
+                  }
+	      }
+           }
+       }
+   }
+
  
    Double_t *ThetaCMS = new Double_t[20000];
    Double_t *ThetaLabRec = new Double_t[20000];
@@ -210,20 +191,20 @@ void Bepp_ana(Int_t nEvents = 10000)
 
     TGraph *Kine_AngRec_EnerRec = new TGraph(numKin, ThetaLabRec, EnerLabRec);
 */   
-   TCanvas *c1 = new TCanvas();
-   c1->Draw();
-   //angle_vs_energy->Draw();
-  // Kine_AngRec_EnerRec->SetLineColor(kRed);
+   //TCanvas *c1 = new TCanvas();
+   c1->cd(1);
+   angle_vs_energy->Draw();
+   //c1->cd(2);
+   //energy_vs_clusterangle->Draw();
+   //energy_vs_clusterangle->SetMarkerStyle(20);
+   c1->cd(2);
    energy_vs_Zorb->Draw();
-   energy_vs_Zorb->SetMarkerStyle(20);
+//   energy_vs_Zorb->SetMarkerStyle(20);
 
-   
-   
 }
 
 
-
-void GetEnergy(Double_t M,Double_t IZ,Double_t BRO,Double_t &E){
+void  GetEnergy(Double_t M,Double_t IZ,Double_t BRO,Double_t &E){
 
   //Energy per nucleon
   Float_t  AM=931.5;
@@ -232,7 +213,6 @@ void GetEnergy(Double_t M,Double_t IZ,Double_t BRO,Double_t &E){
   X=2.*AM*X;
   X=X+pow(AM,2);
   E=TMath::Sqrt(X)-AM;
-
   }
 
 
