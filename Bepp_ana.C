@@ -106,7 +106,7 @@ void Bepp_ana(Int_t nEvents = 1000)
 
                   //angle_vs_energy->Fill(180.0 - theta * TMath::RadToDeg(), ener * Am);
 
-                  if (i == 263){
+                  if (i == 17 || i == 141 || i== 263 || i==347 || i== 395 || i== 807){
 		     std::cout<< "Processing event " << i  << "with " << track.GetHitClusterArray()->size() << " clusters" << endl;
 
                      for (auto iclus = 1; iclus < hitClusterArray->size(); ++iclus) {
@@ -146,11 +146,11 @@ void Bepp_ana(Int_t nEvents = 1000)
                   double ener = 0;
                   Double_t Am = 1.0;
                   Double_t Velocity = 1.0;
-                  Double_t T_cycle = 21.9; 
+                  Double_t T_cycle = 21.9;   //in nano seconds. 
                   GetEnergy(Am, 1.0, bro,ener);
                   std::cout<< firstOrbZ<<endl;
-                  Double_t Energy_lab = ener*Am -(1/2)*Am*pow(Velocity,2) +((Am *Velocity)/T_cycle)*firstOrbZ;
-                  energy_vs_Zorb->Fill(firstOrbZ,Energy_lab);
+                  //Double_t Energy_lab = ener*Am - (1/2)*Am*pow(Velocity,2) + ((Am *Velocity)/T_cycle)*firstOrbZ;
+                  energy_vs_Zorb->Fill(firstOrbZ,ener*Am);
 
 
                   }
