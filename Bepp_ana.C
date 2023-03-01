@@ -112,16 +112,16 @@ void Bepp_ana(Int_t nEvents = 1000)
                   double bro = B_f * rad / TMath::Sin(theta) / 1000.0;
                   double ener = 0;
                   Double_t Am = 1.0;
-                  double threshold=50.0;
+                  double threshold=60.0;
                   std::vector<Point> points;
                   GetEnergy(Am, 1.0, bro, ener);
-                 // std:: cout << ener<<" " << theta << " "<<bro <<  endl;
+                  std:: cout << ener<<" " << theta << " "<<bro <<  endl;
                   //energy_vs_Zorb->Fill(firstOrbZ,ener*Am);
                   //angle_vs_energy->Fill(180.0 - theta * TMath::RadToDeg(), ener * Am);
 
 
                   if (i == 17 || i == 141 || i== 263 || i==347 || i== 395 ||i == 509 || i== 695||i==723||i==806|| i== 807){
-                     std::cout<< "Processing event " << i  << "with " << track.GetHitClusterArray()->size() << " clusters" << endl;
+                    // std::cout<< "Processing event " << i  << "with " << track.GetHitClusterArray()->size() << " clusters" << endl;
 
                      for (auto iclus = 1; iclus < hitClusterArray->size(); ++iclus) {
                          SecCluster = hitClusterArray->at(iclus-1);
@@ -140,7 +140,7 @@ void Bepp_ana(Int_t nEvents = 1000)
                          deltaPhi += phiInc;
                          double x_pos = cluster_secpos.X();
                          double y_pos = cluster_secpos.Y(); 
-                         double z_pos = cluster_secpos.Z(); 
+                         double z_pos = cluster_secpos.Z();
 			 points ={{x_pos,y_pos,z_pos}};
                      }
 
@@ -154,7 +154,7 @@ void Bepp_ana(Int_t nEvents = 1000)
                       closestPoint = p;
                       }
                   }
-                  energy_vs_Zorb->Fill(closestPoint.data(),ener*Am);
+
                   std::vector<Point>  closestPoints;
 		  for (const auto& p:points){
                       double distance = distanceFromZAxis(p);
@@ -162,6 +162,10 @@ void Bepp_ana(Int_t nEvents = 1000)
                          closestPoints.push_back(p);
                       } 
 		  }
+               // loop through each closest point and fill the histogram
+                  for (const auto& p : closestPoints) {
+                      energy_vs_Zorb->Fill(p.z,ener*Am );
+                  }
 	      }
            }
        }
