@@ -12,8 +12,8 @@ void GetEnergy(Double_t M,Double_t IZ,Double_t BRO,Double_t &E);
 
 std::vector<AtHitCluster> fHitClusterArray; //< Clusterized hits container
 
-std::vector<AtHitCluster> *GetHitClusterArray() { 
- 
+std::vector<AtHitCluster> *GetHitClusterArray() {
+
 
          return &fHitClusterArray;
 
@@ -21,6 +21,17 @@ std::vector<AtHitCluster> *GetHitClusterArray() {
  }
 
 
+struct Point{
+  Double_t x;
+  Double_t y;
+  Double_t z;
+
+ };
+
+
+double distanceFromZAxis(const Point& p){
+ return std::sqrt(p.x*p.x+p.y*p.y);
+ }
 
 void Bepp_ana(Int_t nEvents = 1000)
 {
@@ -28,7 +39,7 @@ void Bepp_ana(Int_t nEvents = 1000)
 
    TH2F *angle_vs_energy = new TH2F("angle_vs_energy", "angle_vs_energy", 720, 0, 179, 1000, 0, 100.0);
    TH2F *Z_vs_Y = new TH2F("Z_vs_Y", "energy_vs_clusterangle", 720, 0, -3, 1000, 0, 2.0);
-   TH2F *energy_vs_Zorb = new TH2F("energy_vs_Zorb", "energy_vs_Zorb", 720, 0, -5, 1000, 0, 100.0);
+   TH2F *energy_vs_Zorb = new TH2F("energy_vs_Zorb", "energy_vs_Zorb", 720, 0, -5, 100, 0, 5.0);
    TCanvas *c1 = new TCanvas();
    c1->Divide(2, 2);
    c1->Draw();
@@ -101,13 +112,16 @@ void Bepp_ana(Int_t nEvents = 1000)
                   double bro = B_f * rad / TMath::Sin(theta) / 1000.0;
                   double ener = 0;
                   Double_t Am = 1.0;
-
-                 // GetEnergy(Am, 1.0, bro, ener);
-
+                  double threshold=50.0;
+                  std::vector<Point> points;
+                  GetEnergy(Am, 1.0, bro, ener);
+                 // std:: cout << ener<<" " << theta << " "<<bro <<  endl;
+                  //energy_vs_Zorb->Fill(firstOrbZ,ener*Am);
                   //angle_vs_energy->Fill(180.0 - theta * TMath::RadToDeg(), ener * Am);
 
-                  if (i == 17 || i == 141 || i== 263 || i==347 || i== 395 || i== 807){
-		     std::cout<< "Processing event " << i  << "with " << track.GetHitClusterArray()->size() << " clusters" << endl;
+
+                  if (i == 17 || i == 141 || i== 263 || i==347 || i== 395 ||i == 509 || i== 695||i==723||i==806|| i== 807){
+                     std::cout<< "Processing event " << i  << "with " << track.GetHitClusterArray()->size() << " clusters" << endl;
 
                      for (auto iclus = 1; iclus < hitClusterArray->size(); ++iclus) {
                          SecCluster = hitClusterArray->at(iclus-1);
@@ -124,37 +138,30 @@ void Bepp_ana(Int_t nEvents = 1000)
                          Double_t distance = TMath::Sqrt(cluster_secpos.X() * cluster_secpos.X() + cluster_secpos.Y() * cluster_secpos.Y());
                          phiInc = (phiInc > 0) ? phiInc : 2.0 * TMath::Pi() + phiInc;
                          deltaPhi += phiInc;
-
-                      //std::cout<<phiInc*TMath::RadToDeg()<<"    "<<deltaPhi*TMath::RadToDeg()<<"\n";
-                      //std::cout<<" Distance to z axis : "<<distance << " " << POCAOrbZ << endl;;
-                      //std::cout<<" Length : "<<length<<"\n";
-                      //std::cout << cluster_secpos.X()<< " "<<" Z projection : "<<cluster_secpos.Z()<<"\n";
-                      // std::cout<<" momLoss "<<momLoss<<"\n";
-                        // energy_vs_Zorb->Fill(distance,ener*Am);
-
-                      // NB: Find poca after at least half turn.
-	                 if (distance < POCAOrbZ && deltaPhi > TMath::Pi()){
-			    POCAOrbZ = distance;
-		            firstOrbZ=cluster_secpos.Z();
-			    phiOrbZ = deltaPhi;
-                            lengthOrbZ = length;
-
-                         }
- 
-		  }
-                  double bro = B_f * rad / TMath::Sin(theta) / 1000.0;
-                  double ener = 0;
-                  Double_t Am = 1.0;
-                  Double_t Velocity = 1.0;
-                  Double_t T_cycle = 21.9;   //in nano seconds. 
-                  GetEnergy(Am, 1.0, bro,ener);
-                  std::cout<< firstOrbZ<<endl;
-                  //Double_t Energy_lab = ener*Am - (1/2)*Am*pow(Velocity,2) + ((Am *Velocity)/T_cycle)*firstOrbZ;
-                  energy_vs_Zorb->Fill(firstOrbZ,ener*Am);
-
+                         double x_pos = cluster_secpos.X();
+                         double y_pos = cluster_secpos.Y(); 
+                         double z_pos = cluster_secpos.Z(); 
+			 points ={{x_pos,y_pos,z_pos}};
+                     }
 
                   }
-
+                  double minDistance = std::numeric_limits<double>::max();
+	          Point closestPoint; 
+		  for (const auto& p : points) {
+                      double distance = distanceFromZAxis(p);
+                      if (distance < minDistance) {
+                      minDistance = distance;
+                      closestPoint = p;
+                      }
+                  }
+                  energy_vs_Zorb->Fill(closestPoint.data(),ener*Am);
+                  std::vector<Point>  closestPoints;
+		  for (const auto& p:points){
+                      double distance = distanceFromZAxis(p);
+                      if (distance<threshold){
+                         closestPoints.push_back(p);
+                      } 
+		  }
 	      }
            }
        }
