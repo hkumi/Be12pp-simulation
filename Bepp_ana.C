@@ -33,7 +33,7 @@ double distanceFromZAxis(const Point& p){
  return std::sqrt(p.x*p.x+p.y*p.y);
  }
 
-void Bepp_ana(Int_t nEvents = 1000)
+void Bepp_ana(Int_t nEvents = 10000)
 {
 
 
@@ -112,17 +112,19 @@ void Bepp_ana(Int_t nEvents = 1000)
                   double bro = B_f * rad / TMath::Sin(theta) / 1000.0;
                   double ener = 0;
                   Double_t Am = 1.0;
-                  double threshold=60.0;
+                  double threshold=50.0;
                   std::vector<Point> points;
                   GetEnergy(Am, 1.0, bro, ener);
-                  std:: cout << ener<<" " << theta << " "<<bro <<  endl;
+                 // std:: cout << ener<<" " << theta << " "<<bro <<  endl;
                   //energy_vs_Zorb->Fill(firstOrbZ,ener*Am);
                   //angle_vs_energy->Fill(180.0 - theta * TMath::RadToDeg(), ener * Am);
+		 // Define the event numbers to analyze
+                  std::vector<int> eventNumbers = {141,171,263,305,347,369,395,397,507,589,693,807,861,1051,1119,1225,1273,1331,1601,1603,1627,1677,1851,1853,1947,1993,1999,2025,2189,2267,2383,2419,2451,2487,2531,2535,2555,2565,2701,2767,2771,2783,2835,2925,2927,2971,3005,3041,3455,3485,3519,3563,3667,3685,3707,3781,3843,3909,4031,4205,4229,4305,4323,4353,4367,4419,4425,4447,4523,4695,4793,4811,4827,4867,5123,5221,5461,5555,5789,5805,5865,5887,6023,6197,6351,6361,6587,6627,6695,6853,6931,6935,7041,7285,7389,7453,7625,7753,7791,7885,8125,8173,8219,8319,8455,8473,8485,8637,8651,8669,9087,9187,9339,9341,9411,9433,9437,9501,9647,9653,9693,9729,9759,9901,9953};
 
 
-                  if (i == 17 || i == 141 || i== 263 || i==347 || i== 395 ||i == 509 || i== 695||i==723||i==806|| i== 807){
-                    // std::cout<< "Processing event " << i  << "with " << track.GetHitClusterArray()->size() << " clusters" << endl;
-
+                  // Iterate over event numbers and access the corresponding events
+                  if (std::find(eventNumbers.begin(), eventNumbers.end(), i) != eventNumbers.end()) {
+                     std::cout<< "Processing event " << i  << "with " << track.GetHitClusterArray()->size() << " clusters" << endl;
                      for (auto iclus = 1; iclus < hitClusterArray->size(); ++iclus) {
                          SecCluster = hitClusterArray->at(iclus-1);
                          iniCluster = hitClusterArray->at(iclus);
