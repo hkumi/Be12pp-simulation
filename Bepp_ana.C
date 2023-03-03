@@ -6,6 +6,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <algorithm>
+#include<limits>
 
 void GetEnergy(Double_t M,Double_t IZ,Double_t BRO,Double_t &E);
 
@@ -40,6 +42,7 @@ void Bepp_ana(Int_t nEvents = 10000)
    TH2F *angle_vs_energy = new TH2F("angle_vs_energy", "angle_vs_energy", 720, 0, 179, 1000, 0, 100.0);
    TH2F *Z_vs_Y = new TH2F("Z_vs_Y", "energy_vs_clusterangle", 720, 0, -3, 1000, 0, 2.0);
    TH2F *energy_vs_Zorb = new TH2F("energy_vs_Zorb", "energy_vs_Zorb", 720, 0, -5, 100, 0, 5.0);
+   TH1F* zorbHist = new TH1F("zorbHist", "Zorb Distribution", 100, 0, 1200);
    TCanvas *c1 = new TCanvas();
    c1->Divide(2, 2);
    c1->Draw();
@@ -112,8 +115,9 @@ void Bepp_ana(Int_t nEvents = 10000)
                   double bro = B_f * rad / TMath::Sin(theta) / 1000.0;
                   double ener = 0;
                   Double_t Am = 1.0;
-                  double threshold=50.0;
+
                   std::vector<Point> points;
+                  std::vector<double> distances;
                   GetEnergy(Am, 1.0, bro, ener);
                  // std:: cout << ener<<" " << theta << " "<<bro <<  endl;
                   //energy_vs_Zorb->Fill(firstOrbZ,ener*Am);
@@ -138,6 +142,7 @@ void Bepp_ana(Int_t nEvents = 10000)
                          Double_t phiInc = TMath::ATan2(cluster_secpos.Y()-cluster_inipos.Y(),cluster_inipos.X()-cluster_secpos.X());//calculate angle between the two clusters.
  
                          Double_t distance = TMath::Sqrt(cluster_secpos.X() * cluster_secpos.X() + cluster_secpos.Y() * cluster_secpos.Y());
+
                          phiInc = (phiInc > 0) ? phiInc : 2.0 * TMath::Pi() + phiInc;
                          deltaPhi += phiInc;
                          double x_pos = cluster_secpos.X();
@@ -147,16 +152,24 @@ void Bepp_ana(Int_t nEvents = 10000)
                      }
 
                   }
+
+
                   double minDistance = std::numeric_limits<double>::max();
 	          Point closestPoint; 
 		  for (const auto& p : points) {
                       double distance = distanceFromZAxis(p);
+                      distances.push_back(distance);
                       if (distance < minDistance) {
                       minDistance = distance;
                       closestPoint = p;
                       }
                   }
 
+
+                  // use minimum distance as threshold
+                 // minDistance = *std::min_element(distances.begin(), distances.end());
+
+                  double threshold = minDistance + 0.1;
                   std::vector<Point>  closestPoints;
 		  for (const auto& p:points){
                       double distance = distanceFromZAxis(p);
@@ -166,8 +179,14 @@ void Bepp_ana(Int_t nEvents = 10000)
 		  }
                // loop through each closest point and fill the histogram
                   for (const auto& p : closestPoints) {
+
                       energy_vs_Zorb->Fill(p.z,ener*Am );
                   }
+                for (const auto& p : closestPoints) {
+                    zorbHist->Fill(p.z);
+                }
+
+
 	      }
            }
        }
@@ -204,7 +223,9 @@ void Bepp_ana(Int_t nEvents = 10000)
 */   
    //TCanvas *c1 = new TCanvas();
    c1->cd(1);
-   angle_vs_energy->Draw();
+//   angle_vs_energy->Draw();
+    zorbHist->Draw();
+
    //c1->cd(2);
    //energy_vs_clusterangle->Draw();
    //energy_vs_clusterangle->SetMarkerStyle(20);
@@ -234,5 +255,4 @@ void  GetEnergy(Double_t M,Double_t IZ,Double_t BRO,Double_t &E){
 
   //std::cout<<E<< endl;
   }
-
 
